@@ -1,0 +1,140 @@
+{
+  "uid": "agir-sailing-v1",
+  "title": "Ägir Sailing Dashboard",
+  "description": "GPS telemetry: track, speed, heading, diagnostics",
+  "tags": ["agir", "sailing", "gps"],
+  "refresh": "30s",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Sailing Track",
+      "type": "ae3e-trackmap-panel",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 12 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"lat\" or r._field == \"lon\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"lat\", \"lon\"])"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Speed (kn)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"speed_kn\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "velocityKn",
+          "min": 0,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Heading (°)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 6 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"heading_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "degree",
+          "min": 0,
+          "max": 360,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 4,
+      "title": "GPS Diagnostics",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 6 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"sats_used\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"alt_m\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "C",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"hdop\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "sats_used" },
+            "properties": [
+              { "id": "displayName", "value": "Satellites" },
+              { "id": "unit", "value": "short" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "alt_m" },
+            "properties": [
+              { "id": "displayName", "value": "Altitude" },
+              { "id": "unit", "value": "lengthm" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "hdop" },
+            "properties": [
+              { "id": "displayName", "value": "HDOP" },
+              { "id": "unit", "value": "none" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    }
+  ]
+}

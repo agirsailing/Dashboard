@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    uid: agir-influxdb
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: agir
+      defaultBucket: agir
+    secureJsonData:
+      token: ${INFLUX_TOKEN}
+    editable: false
