@@ -135,6 +135,165 @@
         "tooltip": { "mode": "multi" },
         "legend": { "displayMode": "list", "placement": "bottom" }
       }
+    },
+    {
+      "id": 5,
+      "title": "Wind",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 8 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_wind\")\n  |> filter(fn: (r) => r._field == \"wind_speed_kn\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_wind\")\n  |> filter(fn: (r) => r._field == \"wind_dir_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "wind_speed_kn" },
+            "properties": [
+              { "id": "displayName", "value": "Wind Speed" },
+              { "id": "unit", "value": "velocityKn" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "wind_dir_deg" },
+            "properties": [
+              { "id": "displayName", "value": "Wind Direction" },
+              { "id": "unit", "value": "degree" },
+              { "id": "min", "value": 0 },
+              { "id": "max", "value": 360 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 6,
+      "title": "IMU",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 26, "w": 24, "h": 8 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"yaw_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"pitch_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "C",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"roll_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "D",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"heading_mag_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "degree",
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "yaw_deg" },
+            "properties": [{ "id": "displayName", "value": "Yaw" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "pitch_deg" },
+            "properties": [{ "id": "displayName", "value": "Pitch" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "roll_deg" },
+            "properties": [{ "id": "displayName", "value": "Roll" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "heading_mag_deg" },
+            "properties": [{ "id": "displayName", "value": "Magnetic Heading" }]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Control Surfaces",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 34, "w": 24, "h": 8 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ctrl\")\n  |> filter(fn: (r) => r._field == \"ride_height_m\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ctrl\")\n  |> filter(fn: (r) => r._field == \"flap_angle_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "C",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ctrl\")\n  |> filter(fn: (r) => r._field == \"rudder_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "ride_height_m" },
+            "properties": [
+              { "id": "displayName", "value": "Ride Height" },
+              { "id": "unit", "value": "lengthm" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "flap_angle_deg" },
+            "properties": [
+              { "id": "displayName", "value": "Flap Angle" },
+              { "id": "unit", "value": "degree" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "rudder_deg" },
+            "properties": [
+              { "id": "displayName", "value": "Rudder" },
+              { "id": "unit", "value": "degree" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
     }
   ]
 }

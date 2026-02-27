@@ -10,6 +10,7 @@ from pathlib import Path
 from influxdb_client import InfluxDBClient
 
 from . import checkpoint, parser, writer
+from .schema import schema_for_file
 
 # ---------------------------------------------------------------------------
 # Config from environment
@@ -79,9 +80,15 @@ def _process_file(
     """Parse and ingest one CSV file; return updated state entry."""
     filename = csv_path.name
     entry = state.get(filename, {"byte_offset": 0, "last_timestamp": None})
+
+    schema = schema_for_file(filename)
+    if schema is None:
+        log.warning("Skipping %s: unknown sensor prefix", filename)
+        return entry
+
     byte_offset = entry["byte_offset"]
 
-    valid_rows, bad_rows, new_offset = parser.parse_file(csv_path, byte_offset)
+    valid_rows, bad_rows, new_offset = parser.parse_file(csv_path, byte_offset, schema)
 
     if not valid_rows and not bad_rows:
         return entry  # no new data
@@ -98,6 +105,7 @@ def _process_file(
             org=cfg["influx_org"],
             vessel=cfg["vessel"],
             rows=batch,
+            measurement=schema.measurement,
         )
         if success:
             written += len(batch)

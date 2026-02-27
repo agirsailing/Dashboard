@@ -8,34 +8,28 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 logger = logging.getLogger(__name__)
 
-MEASUREMENT = "telemetry_gps"
-TAG_FIELDS = {"vessel", "device_id", "source"}
-INT_FIELDS = {"sats_used", "fix_quality"}
+_SKIP_FIELDS = {"timestamp_utc", "device_id", "source"}
 
 
-def _row_to_point(row: dict, vessel: str) -> Point:
+def _row_to_point(row: dict, vessel: str, measurement: str) -> Point:
     p = (
-        Point(MEASUREMENT)
+        Point(measurement)
         .tag("vessel", vessel)
         .tag("device_id", row["device_id"])
-        .field("lat", float(row["lat"]))
-        .field("lon", float(row["lon"]))
-        .field("speed_kn", float(row["speed_kn"]))
-        .field("heading_deg", float(row["heading_deg"]))
         .time(row["timestamp_utc"])
     )
     if row.get("source"):
         p = p.tag("source", row["source"])
-    for col in ("alt_m", "hdop"):
-        if col in row:
-            p = p.field(col, float(row[col]))
-    for col in ("sats_used", "fix_quality"):
-        if col in row:
-            p = p.field(col, int(row[col]))
+    for key, value in row.items():
+        if key in _SKIP_FIELDS:
+            continue
+        p = p.field(key, value)
     return p
 
 
-def write_batch(client, bucket: str, org: str, vessel: str, rows: list[dict]) -> bool:
+def write_batch(
+    client, bucket: str, org: str, vessel: str, rows: list[dict], measurement: str
+) -> bool:
     """Write a batch of validated rows to InfluxDB.
 
     Retries with exponential backoff: 3 attempts, delays 1s / 2s / 4s.
@@ -44,7 +38,7 @@ def write_batch(client, bucket: str, org: str, vessel: str, rows: list[dict]) ->
     if not rows:
         return True
 
-    points = [_row_to_point(row, vessel) for row in rows]
+    points = [_row_to_point(row, vessel, measurement) for row in rows]
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
     delays = [1, 2, 4]

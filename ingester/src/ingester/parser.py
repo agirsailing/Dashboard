@@ -4,16 +4,11 @@ import csv
 from datetime import datetime, timezone
 from pathlib import Path
 
-REQUIRED_COLUMNS = {"timestamp_utc", "device_id", "lat", "lon", "speed_kn", "heading_deg"}
-
-OPTIONAL_FLOAT = {"alt_m", "hdop"}
-OPTIONAL_INT = {"sats_used", "fix_quality"}
-IGNORED_COLUMNS = {"lat_dir", "lon_dir"}
+from .schema import SensorSchema
 
 
 def _parse_timestamp(value: str) -> datetime:
     """Parse ISO-8601 UTC timestamp; raise ValueError on failure."""
-    # Accept trailing Z or +00:00
     value = value.strip()
     if value.endswith("Z"):
         value = value[:-1] + "+00:00"
@@ -23,7 +18,9 @@ def _parse_timestamp(value: str) -> datetime:
     return dt
 
 
-def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tuple[dict, str]], int]:
+def parse_file(
+    path: str | Path, byte_offset: int, schema: SensorSchema
+) -> tuple[list[dict], list[tuple[dict, str]], int]:
     """Parse a CSV file starting from byte_offset.
 
     Returns:
@@ -43,12 +40,8 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
     if not remaining:
         return valid_rows, bad_rows, new_offset
 
-    # Decode and parse — handle partial last line (no trailing newline)
     text = remaining.decode("utf-8", errors="replace")
 
-    # If we're at the start of the file we include the header row.
-    # If we're mid-file (resuming) the first chunk won't have a header,
-    # so we need to reconstruct one by reading just the header from position 0.
     if byte_offset == 0:
         lines = text.splitlines()
         if not lines:
@@ -57,7 +50,6 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
         rows = list(reader)
         fieldnames = reader.fieldnames or []
     else:
-        # Read header from start of file
         with path.open("r", newline="", encoding="utf-8", errors="replace") as f:
             header_reader = csv.reader(f)
             try:
@@ -67,9 +59,8 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
         lines = text.splitlines()
         rows = [dict(zip(fieldnames, row)) for row in csv.reader(lines)]
 
-    missing_required = REQUIRED_COLUMNS - set(fieldnames)
+    missing_required = schema.required_columns - set(fieldnames)
     if missing_required:
-        # Quarantine everything — we can't validate without required columns
         for row in rows:
             bad_rows.append((row, f"missing required columns: {missing_required}"))
         return valid_rows, bad_rows, new_offset
@@ -92,7 +83,7 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
         # --- required float fields ---
         required_floats = {}
         ok = True
-        for col in ("lat", "lon", "speed_kn", "heading_deg"):
+        for col in schema.required_floats:
             raw_val = row.get(col, "").strip()
             if raw_val == "":
                 bad_rows.append((row, f"missing required field: {col}"))
@@ -107,6 +98,23 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
         if not ok:
             continue
 
+        # --- required int fields ---
+        required_ints = {}
+        for col in schema.required_ints:
+            raw_val = row.get(col, "").strip()
+            if raw_val == "":
+                bad_rows.append((row, f"missing required field: {col}"))
+                ok = False
+                break
+            try:
+                required_ints[col] = int(raw_val)
+            except ValueError:
+                bad_rows.append((row, f"non-integer value for {col}: {raw_val!r}"))
+                ok = False
+                break
+        if not ok:
+            continue
+
         # --- device_id ---
         device_id = row.get("device_id", "").strip()
         if not device_id:
@@ -115,7 +123,7 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
 
         # --- optional fields ---
         optional: dict = {}
-        for col in OPTIONAL_FLOAT:
+        for col in schema.optional_floats:
             raw_val = row.get(col, "").strip()
             if raw_val:
                 try:
@@ -127,7 +135,7 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
         if not ok:
             continue
 
-        for col in OPTIONAL_INT:
+        for col in schema.optional_ints:
             raw_val = row.get(col, "").strip()
             if raw_val:
                 try:
@@ -148,6 +156,7 @@ def parse_file(path: str | Path, byte_offset: int) -> tuple[list[dict], list[tup
                 "device_id": device_id,
                 "source": source,
                 **required_floats,
+                **required_ints,
                 **optional,
             }
         )

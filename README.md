@@ -29,29 +29,31 @@ For architecture details, see `docs/architecture-v1.md`.
 For operational steps and troubleshooting, see `docs/operations.md`.
 For sample CSV formats, see `docs/examples/README.md`.
 
-## CSV Data Contract (v1)
+## Supported Sensors (v1)
 
-Required columns:
-- `timestamp_utc`
-- `device_id`
-- `lat`
-- `lon`
-- `speed_kn`
-- `heading_deg`
+The ingester identifies sensor type from the CSV filename prefix:
 
-Optional columns:
-- `alt_m`
-- `sats_used`
-- `hdop`
-- `fix_quality`
+| Prefix  | Measurement      | Required fields                          | Optional fields              |
+|---------|------------------|------------------------------------------|------------------------------|
+| `gps_`  | `telemetry_gps`  | lat, lon, speed_kn, heading_deg          | alt_m, hdop, sats_used, fix_quality |
+| `imu_`  | `telemetry_imu`  | yaw_deg, pitch_deg, roll_deg             | heading_mag_deg              |
+| `wind_` | `telemetry_wind` | wind_speed_kn, wind_dir_deg              | —                            |
+| `ctrl_` | `telemetry_ctrl` | ride_height_m, flap_angle_deg, rudder_deg | —                           |
 
-Validation rules:
-- `timestamp_utc` must be ISO-8601 UTC.
-- Coordinates (`lat`, `lon`) must be signed decimal degrees.
-  - `lat > 0` North, `lat < 0` South
-  - `lon > 0` East, `lon < 0` West
-- Numeric parse errors are quarantined per row and do not fail the whole file.
-- Optional source direction columns such as `lat_dir`/`lon_dir` (`N/S`, `E/W`) are allowed.
+All sensors share `timestamp_utc` (ISO-8601 UTC) and `device_id` as required base columns.
+
+Files with an unrecognised prefix are logged as a warning and skipped.
+
+## InfluxDB Schema (v1)
+
+Tags (low cardinality): `vessel`, `device_id`, `source`
+
+| Measurement      | Fields                                                          |
+|------------------|-----------------------------------------------------------------|
+| `telemetry_gps`  | lat, lon, speed_kn, heading_deg, alt_m, hdop, sats_used, fix_quality |
+| `telemetry_imu`  | yaw_deg, pitch_deg, roll_deg, heading_mag_deg                   |
+| `telemetry_wind` | wind_speed_kn, wind_dir_deg                                     |
+| `telemetry_ctrl` | ride_height_m, flap_angle_deg, rudder_deg                       |
 
 ## Ingestion Guarantees (v1)
 
@@ -60,30 +62,21 @@ Validation rules:
 - Quarantine of malformed rows so healthy rows continue processing.
 - Ingest logging includes processed rows, failed rows, and last ingested timestamp.
 
-## InfluxDB Schema (v1)
+## Grafana Panels (v1)
 
-- Measurement: `telemetry_gps`
-- Tags (low cardinality): `vessel`, `device_id`, `source`
-- Fields: `lat`, `lon`, `speed_kn`, `heading_deg`, `alt_m`, `sats_used`
-- Timestamp: source record time in UTC
+1. **Sailing Track** — GPS track map
+2. **Speed (kn)** — GPS speed over ground
+3. **Heading (°)** — GPS true heading
+4. **GPS Diagnostics** — satellites used, altitude, HDOP
+5. **Wind** — wind speed (kn) and direction (°)
+6. **IMU** — yaw, pitch, roll, magnetic heading (°)
+7. **Control Surfaces** — ride height (m), flap angle (°), rudder (°)
 
-## Displayed data
+## Validation Rules
 
-- GPS coordinates
-- GPS speed
-- GPS heading
-- GPS diagnostics (satellites used, altitude, HDOP/fix quality)
-- Wind speed and direction [TODO]
-- Magnetic heading
-- Yaw, pitch, roll
-- Div. magnetic sensors
-  - Ride height
-  - Flap angle
-  - Rudder inclination
-
-## Interfaces
-
-- Map
-- Head-up display
-- Text output
-
+- `timestamp_utc` must be ISO-8601 UTC.
+- Coordinates (`lat`, `lon`) must be signed decimal degrees.
+  - `lat > 0` North, `lat < 0` South
+  - `lon > 0` East, `lon < 0` West
+- Numeric parse errors are quarantined per row and do not fail the whole file.
+- Optional source direction columns such as `lat_dir`/`lon_dir` (`N/S`, `E/W`) are allowed.
