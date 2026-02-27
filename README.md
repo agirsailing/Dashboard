@@ -5,10 +5,80 @@
 Ägir Dashboard is a lightweight local Grafana-based dashboard for Ägir sailing telemetry.
 Its v1 data flow is:
 
-`Raspberry Pi CSV files -> Computer ingester -> InfluxDB -> Grafana dashboards`
+```
+Raspberry Pi (CSV files)
+        │
+        ▼
+  Computer ingester   ←─── watches data/incoming/
+        │
+        ▼
+    InfluxDB           ←─── time-series store (Docker)
+        │
+        ▼
+     Grafana           ←─── visualization (Docker)
+```
 
 The Raspberry Pi records telemetry as CSV, and a computer-side ingester imports that data
 into InfluxDB. Grafana reads from InfluxDB for visualization.
+
+## Prerequisites
+
+- **Docker** and **Docker Compose** (for InfluxDB 2.7 and Grafana 11.4)
+- **Python ≥ 3.11** and **[uv](https://github.com/astral-sh/uv)** (for the ingester)
+
+## Quickstart
+
+### 1. Configure environment
+
+```bash
+cp infra/.env.example infra/.env
+```
+
+Edit `infra/.env` and set secure values for all `*-changeme` fields (see [Configuration](#configuration)).
+
+### 2. Start InfluxDB and Grafana
+
+```bash
+cd infra
+docker compose up -d
+```
+
+Grafana will be available at http://localhost:3000.
+InfluxDB will be available at http://localhost:8086.
+
+### 3. Install and run the ingester
+
+```bash
+cd ingester
+uv sync
+INFLUX_TOKEN=<your-token> uv run ingester
+```
+
+The ingester watches `ingester/data/incoming/` for CSV files. Drop files there and data will
+appear in Grafana.
+
+For full configuration options see [Configuration](#configuration).
+For operational steps and troubleshooting, see `docs/operations.md`.
+
+## Configuration
+
+All ingester settings are controlled via environment variables.
+
+| Variable         | Default                          | Description                          |
+|------------------|----------------------------------|--------------------------------------|
+| `INFLUX_TOKEN`   | *(required)*                     | InfluxDB API token                   |
+| `INFLUX_URL`     | `http://localhost:8086`          | InfluxDB URL (use `localhost` when running ingester outside Docker) |
+| `INFLUX_ORG`     | `agir`                           | InfluxDB organisation                |
+| `INFLUX_BUCKET`  | `agir`                           | InfluxDB bucket                      |
+| `VESSEL`         | `agir`                           | Vessel tag written to every point    |
+| `INCOMING_DIR`   | `data/incoming`                  | Directory to watch for CSV files     |
+| `QUARANTINE_DIR` | `data/quarantine`                | Destination for malformed rows       |
+| `STATE_FILE`     | `state/ingest-checkpoints.json`  | Checkpoint resume state              |
+| `LOG_FILE`       | `logs/ingester.log`              | Ingester log file                    |
+| `POLL_INTERVAL`  | `10`                             | Seconds between periodic scans      |
+| `BATCH_SIZE`     | `500`                            | Rows per InfluxDB write call         |
+
+The Docker services (InfluxDB and Grafana) are configured via `infra/.env`. See `infra/.env.example` for all fields.
 
 ## Usage (v1 architecture)
 
@@ -61,6 +131,15 @@ Tags (low cardinality): `vessel`, `device_id`, `source`
 - Quarantine of malformed rows so healthy rows continue processing.
 - Ingest logging includes processed rows, failed rows, and last ingested timestamp.
 
+### Validation rules
+
+- `timestamp_utc` must be ISO-8601 UTC.
+- Coordinates (`lat`, `lon`) must be signed decimal degrees.
+  - `lat > 0` North, `lat < 0` South
+  - `lon > 0` East, `lon < 0` West
+- Numeric parse errors quarantine the affected row; the remainder of the file continues.
+- Optional source direction columns such as `lat_dir`/`lon_dir` (`N/S`, `E/W`) are allowed.
+
 ## Grafana Panels (v1)
 
 1. **Sailing Track** — GPS track map
@@ -70,12 +149,3 @@ Tags (low cardinality): `vessel`, `device_id`, `source`
 5. **Wind** — wind speed (kn) and direction (°)
 6. **IMU** — yaw, pitch, roll, magnetic heading (°)
 7. **Control Surfaces** — ride height (m), flap angle (°), rudder (°)
-
-## Validation Rules
-
-- `timestamp_utc` must be ISO-8601 UTC.
-- Coordinates (`lat`, `lon`) must be signed decimal degrees.
-  - `lat > 0` North, `lat < 0` South
-  - `lon > 0` East, `lon < 0` West
-- Numeric parse errors are quarantined per row and do not fail the whole file.
-- Optional source direction columns such as `lat_dir`/`lon_dir` (`N/S`, `E/W`) are allowed.
