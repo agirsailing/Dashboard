@@ -10,6 +10,8 @@ These files are draft examples of the expected ingestion format for v1.
   - Required columns plus optional GPS quality fields.
 - `gps_v1_with_extra_columns.csv`
   - Includes extra columns to demonstrate forward compatibility.
+- `gps_v1_with_nmea_direction_columns.csv`
+  - Shows optional NMEA-style direction fields (`N/S`, `E/W`) plus normalized coordinates.
 
 ## Column Rules
 
@@ -38,8 +40,17 @@ explicitly mapped in a later version.
 ## Value Format
 
 - `timestamp_utc`: ISO-8601 UTC (example: `2026-02-27T10:25:00Z`)
-- `lat` / `lon`: decimal degrees
+- `lat` / `lon`: signed decimal degrees (recommended canonical format)
+  - `lat > 0` = North, `lat < 0` = South
+  - `lon > 0` = East, `lon < 0` = West
 - numeric fields: plain decimal values
+
+Optional direction-style columns may be included when source devices output NMEA-like values:
+- `lat_dir`: `N` or `S`
+- `lon_dir`: `E` or `W`
+- `lat_raw`, `lon_raw`: source raw coordinates (if needed for debugging/audit)
+
+In v1, the ingester should treat signed `lat`/`lon` as authoritative for storage.
 
 ## Error Handling Expectation
 

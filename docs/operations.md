@@ -55,8 +55,11 @@ Optional columns:
 Row-level rules:
 
 - `timestamp_utc` is ISO-8601 UTC.
-- `lat`/`lon` are decimal degrees.
+- `lat`/`lon` are signed decimal degrees.
+  - `lat > 0` North, `lat < 0` South
+  - `lon > 0` East, `lon < 0` West
 - invalid numeric values quarantine the row instead of stopping full-file ingest.
+- optional source direction columns (`lat_dir`, `lon_dir`) are allowed.
 
 ## Ingest Behavior and Guarantees
 

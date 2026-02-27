@@ -62,8 +62,11 @@ Optional columns:
 Rules:
 
 - `timestamp_utc` is ISO-8601 UTC.
-- `lat` and `lon` are decimal degrees.
+- `lat` and `lon` are signed decimal degrees (`+/-`).
+  - `lat > 0` North, `lat < 0` South
+  - `lon > 0` East, `lon < 0` West
 - Numeric parse failures quarantine the row; they do not fail the entire file.
+- Optional source columns `lat_dir`/`lon_dir` (`N/S`, `E/W`) may be included.
 
 ## InfluxDB Data Model (v1)
 

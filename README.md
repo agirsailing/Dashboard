@@ -27,6 +27,7 @@ The ingester runs independently as a local Python script/service and is responsi
 
 For architecture details, see `docs/architecture-v1.md`.
 For operational steps and troubleshooting, see `docs/operations.md`.
+For sample CSV formats, see `docs/examples/README.md`.
 
 ## CSV Data Contract (v1)
 
@@ -46,8 +47,11 @@ Optional columns:
 
 Validation rules:
 - `timestamp_utc` must be ISO-8601 UTC.
-- Coordinates (`lat`, `lon`) must be decimal degrees.
+- Coordinates (`lat`, `lon`) must be signed decimal degrees.
+  - `lat > 0` North, `lat < 0` South
+  - `lon > 0` East, `lon < 0` West
 - Numeric parse errors are quarantined per row and do not fail the whole file.
+- Optional source direction columns such as `lat_dir`/`lon_dir` (`N/S`, `E/W`) are allowed.
 
 ## Ingestion Guarantees (v1)
 
