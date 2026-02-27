@@ -31,26 +31,19 @@ Example local layout on the ingest computer:
    - rows parsed
    - batch write success
    - checkpoint updated
-3. Confirm data appears in InfluxDB measurement `telemetry_gps`.
+3. Confirm data appears in the expected InfluxDB measurement (e.g. `telemetry_gps` for a GPS file).
 4. Confirm Grafana panel renders recent points.
 
 ## CSV Validation Rules (v1)
 
-Required columns:
+All sensors require `timestamp_utc` (ISO-8601 UTC) and `device_id`. Sensor type is determined by filename prefix.
 
-- `timestamp_utc`
-- `device_id`
-- `lat`
-- `lon`
-- `speed_kn`
-- `heading_deg`
-
-Optional columns:
-
-- `alt_m`
-- `sats_used`
-- `hdop`
-- `fix_quality`
+| Prefix   | Required fields                              | Optional fields                       |
+|----------|----------------------------------------------|---------------------------------------|
+| `gps_`   | lat, lon, speed_kn, heading_deg              | alt_m, hdop, sats_used, fix_quality   |
+| `imu_`   | yaw_deg, pitch_deg, roll_deg                 | heading_mag_deg                       |
+| `wind_`  | wind_speed_kn, wind_dir_deg                  | —                                     |
+| `ctrl_`  | ride_height_m, flap_angle_deg, rudder_deg    | —                                     |
 
 Row-level rules:
 
@@ -58,8 +51,8 @@ Row-level rules:
 - `lat`/`lon` are signed decimal degrees.
   - `lat > 0` North, `lat < 0` South
   - `lon > 0` East, `lon < 0` West
-- invalid numeric values quarantine the row instead of stopping full-file ingest.
-- optional source direction columns (`lat_dir`, `lon_dir`) are allowed.
+- Invalid numeric values quarantine the row instead of stopping full-file ingest.
+- Files with an unrecognised prefix are skipped with a warning; no rows are quarantined.
 
 ## Ingest Behavior and Guarantees
 
@@ -119,7 +112,7 @@ Symptoms:
 Actions:
 
 1. Verify Grafana datasource points to correct Influx instance/bucket.
-2. Verify dashboard query time range and measurement (`telemetry_gps`).
+2. Verify dashboard query time range and measurement (`telemetry_gps`, `telemetry_imu`, `telemetry_wind`, `telemetry_ctrl`).
 3. Query Influx directly to confirm recent points exist.
 
 ## Maintenance

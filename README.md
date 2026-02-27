@@ -12,11 +12,10 @@ into InfluxDB. Grafana reads from InfluxDB for visualization.
 
 ## Usage (v1 architecture)
 
-The program runs as multiple components:
-1. Grafana (frontend) [Docker]
-2. FastAPI server (backend) [Docker]
-3. Ingester (data ingestion) [Local]
-4. InfluxDB (time-series store) [Docker/Local]
+The program runs as three components:
+1. InfluxDB (time-series store) [Docker]
+2. Grafana (frontend) [Docker]
+3. Ingester (data ingestion) [Local Python]
 
 The ingester runs independently as a local Python script/service and is responsible for:
 - detecting new/updated CSV files from the Raspberry Pi
