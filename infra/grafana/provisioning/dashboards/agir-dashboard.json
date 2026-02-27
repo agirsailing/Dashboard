@@ -15,7 +15,7 @@
     {
       "id": 1,
       "title": "Sailing Track",
-      "type": "ae3e-trackmap-panel",
+      "type": "pr0ps-trackmap-panel",
       "gridPos": { "x": 0, "y": 0, "w": 12, "h": 12 },
       "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
       "targets": [

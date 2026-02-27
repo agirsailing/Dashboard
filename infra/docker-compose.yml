@@ -32,7 +32,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
-      GF_INSTALL_PLUGINS: ae3e-trackmap-panel
+      GF_INSTALL_PLUGINS: pr0ps-trackmap-panel
       INFLUX_TOKEN: ${INFLUX_TOKEN}
     volumes:
       - grafana-data:/var/lib/grafana
