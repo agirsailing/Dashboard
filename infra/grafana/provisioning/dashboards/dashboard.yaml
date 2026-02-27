@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Ägir
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false
+    folder: Ägir
