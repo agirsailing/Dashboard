@@ -1,0 +1,29 @@
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+
+# Runtime/process files
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+node_modules/
+.venv/
+venv/
+
+# Build and cache outputs
+dist/
+build/
+tmp/
+temp/
+.cache/
