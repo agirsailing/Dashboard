@@ -43,21 +43,15 @@ flowchart LR
 
 ## CSV Contract (v1)
 
-Required columns:
+All sensors share two required base columns: `timestamp_utc` (ISO-8601 UTC) and `device_id`.
+Sensor type is determined by the filename prefix.
 
-- `timestamp_utc`
-- `device_id`
-- `lat`
-- `lon`
-- `speed_kn`
-- `heading_deg`
-
-Optional columns:
-
-- `alt_m`
-- `sats_used`
-- `hdop`
-- `fix_quality`
+| Prefix   | Required fields                              | Optional fields                       |
+|----------|----------------------------------------------|---------------------------------------|
+| `gps_`   | lat, lon, speed_kn, heading_deg              | alt_m, hdop, sats_used, fix_quality   |
+| `imu_`   | yaw_deg, pitch_deg, roll_deg                 | heading_mag_deg                       |
+| `wind_`  | wind_speed_kn, wind_dir_deg                  | —                                     |
+| `ctrl_`  | ride_height_m, flap_angle_deg, rudder_deg    | —                                     |
 
 Rules:
 
@@ -66,14 +60,20 @@ Rules:
   - `lat > 0` North, `lat < 0` South
   - `lon > 0` East, `lon < 0` West
 - Numeric parse failures quarantine the row; they do not fail the entire file.
-- Optional source columns `lat_dir`/`lon_dir` (`N/S`, `E/W`) may be included.
+- Files with an unrecognised prefix are skipped with a warning; no rows are quarantined.
 
 ## InfluxDB Data Model (v1)
 
-- Measurement: `telemetry_gps`
-- Tags (low-cardinality): `vessel`, `device_id`, `source`
-- Fields: `lat`, `lon`, `speed_kn`, `heading_deg`, `alt_m`, `sats_used`
-- Timestamp: source telemetry time in UTC
+Tags (low-cardinality): `vessel`, `device_id`, `source`
+
+| Measurement       | Fields                                                               |
+|-------------------|----------------------------------------------------------------------|
+| `telemetry_gps`   | lat, lon, speed_kn, heading_deg, alt_m, hdop, sats_used, fix_quality |
+| `telemetry_imu`   | yaw_deg, pitch_deg, roll_deg, heading_mag_deg                        |
+| `telemetry_wind`  | wind_speed_kn, wind_dir_deg                                          |
+| `telemetry_ctrl`  | ride_height_m, flap_angle_deg, rudder_deg                            |
+
+Timestamp: source telemetry time in UTC.
 
 ## Ingestion Lifecycle
 
