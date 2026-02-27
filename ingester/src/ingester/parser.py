@@ -1,7 +1,7 @@
 """CSV parsing and v1 contract validation."""
 
 import csv
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .schema import SensorSchema
@@ -14,7 +14,7 @@ def _parse_timestamp(value: str) -> datetime:
         value = value[:-1] + "+00:00"
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return dt
 
 
@@ -129,7 +129,9 @@ def parse_file(
                 try:
                     optional[col] = float(raw_val)
                 except ValueError:
-                    bad_rows.append((row, f"non-numeric value for optional field {col}: {raw_val!r}"))
+                    bad_rows.append(
+                        (row, f"non-numeric value for optional field {col}: {raw_val!r}")
+                    )
                     ok = False
                     break
         if not ok:
@@ -141,7 +143,9 @@ def parse_file(
                 try:
                     optional[col] = int(raw_val)
                 except ValueError:
-                    bad_rows.append((row, f"non-integer value for optional field {col}: {raw_val!r}"))
+                    bad_rows.append(
+                        (row, f"non-integer value for optional field {col}: {raw_val!r}")
+                    )
                     ok = False
                     break
         if not ok:

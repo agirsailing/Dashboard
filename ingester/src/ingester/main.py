@@ -1,20 +1,23 @@
-"""Ägir Dashboard ingester — CLI entry point and polling loop."""
+"""Ägir Dashboard ingester — CLI entry point and file-watching loop."""
 
 import logging
 import os
+import queue
 import signal
 import sys
-import time
 from pathlib import Path
+from typing import Any
 
 from influxdb_client import InfluxDBClient
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
+from watchdog.observers import Observer
 
-from . import checkpoint, parser, writer
-from .schema import schema_for_file
+from . import checkpoint, processor
 
 # ---------------------------------------------------------------------------
 # Config from environment
 # ---------------------------------------------------------------------------
+
 
 def _env(key: str, default: str | None = None) -> str:
     val = os.environ.get(key, default)
@@ -24,7 +27,7 @@ def _env(key: str, default: str | None = None) -> str:
     return val
 
 
-def _load_config() -> dict:
+def _load_config() -> dict[str, Any]:
     return {
         "influx_url": _env("INFLUX_URL", "http://localhost:8086"),
         "influx_token": _env("INFLUX_TOKEN"),
@@ -44,6 +47,7 @@ def _load_config() -> dict:
 # Logging
 # ---------------------------------------------------------------------------
 
+
 def _setup_logging(log_file: Path) -> None:
     log_file.parent.mkdir(parents=True, exist_ok=True)
     fmt = "%(asctime)s %(levelname)s %(name)s: %(message)s"
@@ -58,109 +62,75 @@ def _setup_logging(log_file: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Polling loop
+# Watchdog event handler
 # ---------------------------------------------------------------------------
 
 log = logging.getLogger(__name__)
 _running = True
 
 
-def _handle_signal(signum, frame):
+def _handle_signal(signum: int, frame: Any) -> None:
     global _running
     log.info("Received signal %s, shutting down gracefully…", signum)
     _running = False
 
 
-def _process_file(
-    csv_path: Path,
-    cfg: dict,
-    state: dict,
-    influx_client,
-) -> dict:
-    """Parse and ingest one CSV file; return updated state entry."""
-    filename = csv_path.name
-    entry = state.get(filename, {"byte_offset": 0, "last_timestamp": None})
+class _CSVHandler(FileSystemEventHandler):
+    """Push created/modified CSV paths onto a queue for the main loop."""
 
-    schema = schema_for_file(filename)
-    if schema is None:
-        log.warning("Skipping %s: unknown sensor prefix", filename)
-        return entry
+    def __init__(self, q: "queue.Queue[Path]") -> None:
+        self._q = q
 
-    byte_offset = entry["byte_offset"]
+    def _enqueue(self, event: FileSystemEvent) -> None:
+        if not event.is_directory and str(event.src_path).endswith(".csv"):
+            self._q.put(Path(str(event.src_path)))
 
-    valid_rows, bad_rows, new_offset = parser.parse_file(csv_path, byte_offset, schema)
+    def on_created(self, event: FileSystemEvent) -> None:
+        self._enqueue(event)
 
-    if not valid_rows and not bad_rows:
-        return entry  # no new data
-
-    # Write valid rows in batches
-    batch_size = cfg["batch_size"]
-    written = 0
-    last_ts = entry["last_timestamp"]
-    for i in range(0, len(valid_rows), batch_size):
-        batch = valid_rows[i : i + batch_size]
-        success = writer.write_batch(
-            influx_client,
-            bucket=cfg["influx_bucket"],
-            org=cfg["influx_org"],
-            vessel=cfg["vessel"],
-            rows=batch,
-            measurement=schema.measurement,
-        )
-        if success:
-            written += len(batch)
-            if batch:
-                last_ts = batch[-1]["timestamp_utc"].isoformat()
-        else:
-            log.error("Batch write failed for %s; stopping further batches for this cycle", filename)
-            break
-
-    # Quarantine bad rows
-    for row, reason in bad_rows:
-        checkpoint.quarantine_row(cfg["quarantine_dir"], filename, row, reason)
-
-    log.info(
-        "file=%s processed=%d quarantined=%d last_ts=%s",
-        filename,
-        written,
-        len(bad_rows),
-        last_ts,
-    )
-
-    return {
-        "byte_offset": new_offset,
-        "last_timestamp": last_ts,
-    }
+    def on_modified(self, event: FileSystemEvent) -> None:
+        self._enqueue(event)
 
 
-def _poll(cfg: dict, influx_client) -> None:
-    incoming_dir: Path = cfg["incoming_dir"]
+# ---------------------------------------------------------------------------
+# Main loop helpers
+# ---------------------------------------------------------------------------
+
+
+def _scan_all(
+    cfg: dict[str, Any],
+    state: dict[str, Any],
+    influx_client: Any,
+) -> None:
+    """Process every CSV in incoming_dir and persist the checkpoint."""
     state_file: Path = cfg["state_file"]
-
-    state = checkpoint.load(state_file)
-
-    csv_files = sorted(incoming_dir.glob("*.csv"))
-    if not csv_files:
-        return
-
-    for csv_path in csv_files:
+    for csv_path in sorted(cfg["incoming_dir"].glob("*.csv")):
         if not _running:
             break
         try:
-            updated = _process_file(csv_path, cfg, state, influx_client)
-            state[csv_path.name] = updated
+            state[csv_path.name] = processor.process_file(csv_path, cfg, state, influx_client)
         except Exception:
             log.exception("Unexpected error processing %s", csv_path.name)
-
     checkpoint.save(state_file, state)
+
+
+def _drain_queue(q: "queue.Queue[Path]") -> set[Path]:
+    """Return all paths currently in the queue without blocking."""
+    paths: set[Path] = set()
+    while True:
+        try:
+            paths.add(q.get_nowait())
+        except queue.Empty:
+            break
+    return paths
 
 
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
-    # Show help if requested
     if "--help" in sys.argv or "-h" in sys.argv:
         print(
             "Ägir ingester v1\n\n"
@@ -181,7 +151,6 @@ def main() -> None:
 
     cfg = _load_config()
 
-    # Create runtime directories
     for d in (cfg["incoming_dir"], cfg["quarantine_dir"], cfg["state_file"].parent):
         d.mkdir(parents=True, exist_ok=True)
 
@@ -191,19 +160,49 @@ def main() -> None:
     signal.signal(signal.SIGINT, _handle_signal)
     signal.signal(signal.SIGTERM, _handle_signal)
 
+    event_q: queue.Queue[Path] = queue.Queue()
+    obs = Observer()
+    obs.schedule(_CSVHandler(event_q), str(cfg["incoming_dir"]), recursive=False)
+    obs.start()
+    log.info(
+        "Watching %s for CSV files (poll_interval=%ds)",
+        cfg["incoming_dir"],
+        cfg["poll_interval"],
+    )
+
+    state = checkpoint.load(cfg["state_file"])
+
     with InfluxDBClient(
         url=cfg["influx_url"],
         token=cfg["influx_token"],
         org=cfg["influx_org"],
     ) as influx_client:
+        # Process any files that arrived before the observer started
+        _scan_all(cfg, state, influx_client)
+
         while _running:
             try:
-                _poll(cfg, influx_client)
-            except Exception:
-                log.exception("Unhandled error in poll cycle")
-            if _running:
-                time.sleep(cfg["poll_interval"])
+                # Block until a file event or poll_interval elapses
+                first = event_q.get(timeout=cfg["poll_interval"])
+                paths = {first} | _drain_queue(event_q)
+            except queue.Empty:
+                # Timeout: periodic fallback scan catches anything the observer missed
+                _scan_all(cfg, state, influx_client)
+                continue
 
+            for csv_path in sorted(paths):
+                if not _running:
+                    break
+                try:
+                    state[csv_path.name] = processor.process_file(
+                        csv_path, cfg, state, influx_client
+                    )
+                except Exception:
+                    log.exception("Unexpected error processing %s", csv_path.name)
+            checkpoint.save(cfg["state_file"], state)
+
+    obs.stop()
+    obs.join()
     log.info("Ingester stopped.")
 
 

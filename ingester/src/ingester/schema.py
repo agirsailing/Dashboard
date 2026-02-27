@@ -14,9 +14,7 @@ class SensorSchema:
     @property
     def required_columns(self) -> frozenset[str]:
         return frozenset(
-            {"timestamp_utc", "device_id"}
-            | set(self.required_floats)
-            | set(self.required_ints)
+            {"timestamp_utc", "device_id"} | set(self.required_floats) | set(self.required_ints)
         )
 
 
