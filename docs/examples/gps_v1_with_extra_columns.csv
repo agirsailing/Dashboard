@@ -1,0 +1,6 @@
+timestamp_utc,device_id,lat,lon,speed_kn,heading_deg,alt_m,sats_used,roll_deg,pitch_deg,source,schema_version
+2026-02-27T10:25:00Z,agir_pi_02,57.71001,11.97601,10.7,175.2,3.9,12,2.1,-0.4,onboard_mux,v1
+2026-02-27T10:25:01Z,agir_pi_02,57.71004,11.97606,10.8,175.0,3.9,12,2.0,-0.5,onboard_mux,v1
+2026-02-27T10:25:02Z,agir_pi_02,57.71007,11.97611,10.8,174.8,4.0,11,2.2,-0.3,onboard_mux,v1
+2026-02-27T10:25:03Z,agir_pi_02,57.71010,11.97616,10.9,174.6,4.0,11,2.1,-0.4,onboard_mux,v1
+2026-02-27T10:25:04Z,agir_pi_02,57.71013,11.97621,11.0,174.4,4.1,12,2.3,-0.2,onboard_mux,v1
