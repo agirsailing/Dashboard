@@ -138,9 +138,7 @@ def _parse_mode() -> str:
         sys.exit(1)
     mode = sys.argv[idx + 1]
     if mode not in ("file", "mqtt", "both"):
-        print(
-            f"ERROR: --mode must be one of: file, mqtt, both (got {mode!r})", file=sys.stderr
-        )
+        print(f"ERROR: --mode must be one of: file, mqtt, both (got {mode!r})", file=sys.stderr)
         sys.exit(1)
     return mode
 
@@ -183,9 +181,7 @@ def main() -> None:
         d.mkdir(parents=True, exist_ok=True)
 
     _setup_logging(cfg["log_file"])
-    log.info(
-        "Ägir ingester starting — vessel=%s mode=%s", cfg["vessel"], mode
-    )
+    log.info("Ägir ingester starting — vessel=%s mode=%s", cfg["vessel"], mode)
 
     signal.signal(signal.SIGINT, _handle_signal)
     signal.signal(signal.SIGTERM, _handle_signal)
