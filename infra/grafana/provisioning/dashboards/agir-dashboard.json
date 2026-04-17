@@ -3,9 +3,9 @@
   "title": "Ägir Sailing Dashboard",
   "description": "GPS telemetry: track, speed, heading, diagnostics",
   "tags": ["agir", "sailing", "gps"],
-  "refresh": "30s",
+  "refresh": "5s",
   "time": {
-    "from": "now-3h",
+    "from": "now-10m",
     "to": "now"
   },
   "timepicker": {},
@@ -22,7 +22,7 @@
         {
           "refId": "A",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
-          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"lat\" or r._field == \"lon\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"lat\", \"lon\"])"
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"lat\" or r._field == \"lon\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"lat\", \"lon\"])\n  |> sort(columns: [\"_time\"])\n  |> tail(n: 300)"
         }
       ],
       "options": {}
@@ -63,7 +63,7 @@
         {
           "refId": "A",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
-          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"heading_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"heading_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -151,7 +151,7 @@
         {
           "refId": "B",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
-          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_wind\")\n  |> filter(fn: (r) => r._field == \"wind_dir_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_wind\")\n  |> filter(fn: (r) => r._field == \"wind_dir_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -192,7 +192,7 @@
         {
           "refId": "A",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
-          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"yaw_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"yaw_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         },
         {
           "refId": "B",
@@ -207,7 +207,7 @@
         {
           "refId": "D",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
-          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"heading_mag_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_imu\")\n  |> filter(fn: (r) => r._field == \"heading_mag_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {

@@ -43,6 +43,17 @@ services:
     networks:
       - agir-net
 
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: agir-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    networks:
+      - agir-net
+
 networks:
   agir-net:
     driver: bridge
@@ -51,3 +62,4 @@ volumes:
   influxdb-data:
   influxdb-config:
   grafana-data:
+  mosquitto-data:
