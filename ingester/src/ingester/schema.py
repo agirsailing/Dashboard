@@ -38,10 +38,24 @@ SCHEMAS: dict[str, SensorSchema] = {
         measurement="telemetry_ctrl",
         required_floats=("ride_height_m", "flap_angle_deg", "rudder_deg"),
     ),
+    "ctrl_ultrasonic_left": SensorSchema(
+        measurement="telemetry_ultrasonic_left",
+        required_floats=("distance_m",),
+    ),
+    "ctrl_ultrasonic_right": SensorSchema(
+        measurement="telemetry_ultrasonic_right",
+        required_floats=("distance_m",),
+    ),
+    "ctrl_mean": SensorSchema(
+        measurement="telemetry_ultrasonic_mean",
+        required_floats=("distance_m",),
+    ),
 }
 
 
 def schema_for_file(filename: str) -> SensorSchema | None:
     """Return the SensorSchema for a filename, or None if prefix is unknown."""
-    prefix = filename.split("_")[0]
-    return SCHEMAS.get(prefix)
+    for prefix in sorted(SCHEMAS, key=len, reverse=True):
+        if filename.startswith(prefix + "_"):
+            return SCHEMAS[prefix]
+    return None

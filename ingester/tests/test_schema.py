@@ -18,6 +18,9 @@ from ingester.schema import SCHEMAS, schema_for_file
         "imu_2024_01_01.csv",
         "wind_2024_01_01.csv",
         "ctrl_2024_01_01.csv",
+        "ctrl_ultrasonic_left_2026-04-17_14-45-26.csv",
+        "ctrl_ultrasonic_right_2026-04-17_14-45-26.csv",
+        "ctrl_mean_2026-04-17_14-45-26.csv",
     ],
 )
 def test_schema_for_file_known_prefixes(filename):
@@ -94,6 +97,49 @@ def test_required_columns_ctrl():
     schema = SCHEMAS["ctrl"]
     rc = schema.required_columns
     assert {"timestamp_utc", "device_id", "ride_height_m", "flap_angle_deg", "rudder_deg"} <= rc
+
+
+def test_required_columns_ultrasonic_left():
+    schema = SCHEMAS["ctrl_ultrasonic_left"]
+    rc = schema.required_columns
+    assert {"timestamp_utc", "device_id", "distance_m"} <= rc
+
+
+def test_required_columns_ultrasonic_right():
+    schema = SCHEMAS["ctrl_ultrasonic_right"]
+    rc = schema.required_columns
+    assert {"timestamp_utc", "device_id", "distance_m"} <= rc
+
+
+def test_required_columns_ctrl_mean():
+    schema = SCHEMAS["ctrl_mean"]
+    rc = schema.required_columns
+    assert {"timestamp_utc", "device_id", "distance_m"} <= rc
+
+
+def test_schema_for_file_ctrl_mean_not_matched_as_ctrl():
+    # ctrl_mean_... must resolve to ctrl_mean schema, not the plain ctrl schema
+    result = schema_for_file("ctrl_mean_2026-04-17_14-45-26.csv")
+    assert result is not None
+    assert result.measurement == "telemetry_ultrasonic_mean"
+
+
+def test_schema_for_file_ctrl_ultrasonic_left():
+    result = schema_for_file("ctrl_ultrasonic_left_2026-04-17_14-45-26.csv")
+    assert result is not None
+    assert result.measurement == "telemetry_ultrasonic_left"
+
+
+def test_schema_for_file_ctrl_ultrasonic_right():
+    result = schema_for_file("ctrl_ultrasonic_right_2026-04-17_14-45-26.csv")
+    assert result is not None
+    assert result.measurement == "telemetry_ultrasonic_right"
+
+
+def test_schema_for_file_plain_ctrl_still_matches():
+    result = schema_for_file("ctrl_2024_01_01.csv")
+    assert result is not None
+    assert result.measurement == "telemetry_ctrl"
 
 
 def test_required_columns_is_frozenset():

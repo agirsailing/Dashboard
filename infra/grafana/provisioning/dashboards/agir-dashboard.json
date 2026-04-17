@@ -294,6 +294,99 @@
         "tooltip": { "mode": "multi" },
         "legend": { "displayMode": "list", "placement": "bottom" }
       }
+    },
+    {
+      "id": 8,
+      "title": "Ultrasonic Left",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 42, "w": 8, "h": 8 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ultrasonic_left\")\n  |> filter(fn: (r) => r._field == \"distance_m\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthm",
+          "min": 0,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "distance_m" },
+            "properties": [{ "id": "displayName", "value": "Distance (Left)" }]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Ultrasonic Right",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 42, "w": 8, "h": 8 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ultrasonic_right\")\n  |> filter(fn: (r) => r._field == \"distance_m\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthm",
+          "min": 0,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "distance_m" },
+            "properties": [{ "id": "displayName", "value": "Distance (Right)" }]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Ultrasonic Mean",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 42, "w": 8, "h": 8 },
+      "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ultrasonic_mean\")\n  |> filter(fn: (r) => r._field == \"distance_m\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthm",
+          "min": 0,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "distance_m" },
+            "properties": [{ "id": "displayName", "value": "Distance (Mean)" }]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
     }
   ]
 }
