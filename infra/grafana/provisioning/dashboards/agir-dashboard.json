@@ -22,7 +22,7 @@
         {
           "refId": "A",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
-          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"lat\" or r._field == \"lon\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"lat\", \"lon\"])\n  |> sort(columns: [\"_time\"])\n  |> tail(n: 300)"
+          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_gps\")\n  |> filter(fn: (r) => r._field == \"lat\" or r._field == \"lon\")\n  |> aggregateWindow(every: 5s, fn: mean, createEmpty: false)\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"lat\", \"lon\"])\n  |> sort(columns: [\"_time\"])"
         }
       ],
       "options": {}
@@ -249,15 +249,10 @@
         {
           "refId": "A",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
-          "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ctrl\")\n  |> filter(fn: (r) => r._field == \"ride_height_m\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
-        },
-        {
-          "refId": "B",
-          "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
           "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ctrl\")\n  |> filter(fn: (r) => r._field == \"flap_angle_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
         },
         {
-          "refId": "C",
+          "refId": "B",
           "datasource": { "uid": "agir-influxdb", "type": "influxdb" },
           "query": "from(bucket: \"agir\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"telemetry_ctrl\")\n  |> filter(fn: (r) => r._field == \"rudder_deg\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
         }
@@ -267,13 +262,6 @@
           "color": { "mode": "palette-classic" }
         },
         "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "ride_height_m" },
-            "properties": [
-              { "id": "displayName", "value": "Ride Height" },
-              { "id": "unit", "value": "lengthm" }
-            ]
-          },
           {
             "matcher": { "id": "byName", "options": "flap_angle_deg" },
             "properties": [
